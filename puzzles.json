@@ -55,17 +55,8 @@
       { "id": "N032", "numbers": ["1", "2", "4"], "target": 10, "metrics": {"comments": 2, "likes": 9} },
       { "id": "N044", "numbers": ["4", "4", "5"], "target": 10, "metrics": {"comments": 2, "likes": 7} }
     ],
-    "3_transcendental": [
-      { "id": "T001", "numbers": ["π", "e", "φ"], "target": 10, "solution": "log(e, e) * 10 + sin(π) * phi", "hint": "πを0に変え、eを1に変える魔法。" },
-      { "id": "T002", "numbers": ["π", "π", "10"], "target": 10, "solution": "log(pi, pi) * 10", "hint": "同じ数同士の対数は..." },
+    "1_transcendental": [
       { "id": "T003", "numbers": ["φ", "φ", "9"], "target": 10, "solution": "(phi * phi - phi) + 9", "hint": "黄金数の定義 φ² = φ + 1 を使おう。" },
-      { "id": "T004", "numbers": ["e", "1", "9"], "target": 10, "solution": "e**(1 - 1) + 9", "hint": "どんな数も0乗すれば1になります。" },
-      { "id": "T005", "numbers": ["τ", "τ", "10"], "target": 10, "solution": "log(tau, tau) * 10", "hint": "白銀数も対数で1に調律できます。" },
-      { "id": "T006", "numbers": ["π", "3", "1"], "target": 10, "solution": "factorial(3) + 3 + 1**π", "hint": "1は何乗しても1。πをパワーに変えて。" },
-      { "id": "T007", "numbers": ["e", "log(e)", "10"], "target": 10, "solution": "log(e, e) * 10", "hint": "ネイピア数と自然対数の関係。" },
-      { "id": "T008", "numbers": ["φ", "1", "2"], "target": 10, "solution": "factorial(round(phi)) + 8", "hint": "※roundが使えない場合は累乗で工夫。" },
-      { "id": "T009", "numbers": ["π", "sin(π)", "10"], "target": 10, "solution": "cos(sin(pi)) + 9", "hint": "sin(π)は0、cos(0)は1です。" },
-      { "id": "T010", "numbers": ["e", "π", "φ"], "target": 10, "solution": "log(e, e) + log(pi, pi) + factorial(log(phi, phi)) + 7", "hint": "すべてを1に変換して足し合わせる。" }
     ]
   }
 }
