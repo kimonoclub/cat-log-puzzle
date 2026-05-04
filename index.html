@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cat log puzzle | Meditative Mathematics</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;700&family=Shippori+Mincho:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-amber: #1A1612;
+            --gold: #FAD6A5;
+            --washi: rgba(255, 249, 240, 0.08);
+            --transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            margin: 0; padding: 0;
+            background-color: var(--bg-amber);
+            color: white;
+            font-family: 'Noto Sans', sans-serif;
+            display: flex; height: 100vh; overflow: hidden;
+        }
+
+        /* サイドバー：知のアーカイブ */
+        #sidebar {
+            width: 260px; background: rgba(0, 0, 0, 0.4);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 30px 25px; display: flex; flex-direction: column; box-sizing: border-box;
+        }
+
+        h1 { font-family: 'Shippori Mincho', serif; font-size: 22px; margin: 0 0 20px 0; letter-spacing: 1px; }
+        .label { font-size: 10px; color: var(--gold); letter-spacing: 2px; margin-bottom: 8px; opacity: 0.8; }
+        
+        #course-list { margin-bottom: 25px; }
+        .course-btn { 
+            display: block; width: 100%; text-align: left; background: none; border: none;
+            color: #666; padding: 6px 0; cursor: pointer; font-size: 11px; transition: var(--transition);
+        }
+        .course-btn.active { color: var(--gold); font-weight: bold; }
+
+        #archive-grid {
+            display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; overflow-y: auto;
+            max-height: 400px; padding-right: 5px;
+        }
+        .tile {
+            aspect-ratio: 1; background: var(--washi); border-radius: 4px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 10px; color: #555; cursor: pointer; transition: var(--transition);
+        }
+        .tile.active { background: var(--gold); color: var(--bg-amber); font-weight: bold; }
+        .tile.cleared { background: rgba(250, 214, 165, 0.25); color: white; }
+
+        /* キャンバス：瞑想の場 */
+        #canvas {
+            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+            padding: 20px 40px; position: relative; padding-top: 6vh; 
+        }
+
+        /* アイコン表示：装飾を廃した純粋な黒 */
+        #target-icon-container {
+            height: 140px; display: flex; align-items: center; justify-content: center;
+            margin-bottom: 10px;
+        }
+        #target-icon {
+            max-height: 120px; width: auto; 
+            /* 光（shadow）を完全に削除 */
+            filter: none; 
+            transition: transform 0.8s;
+        }
+
+        #stage-info { font-size: 11px; color: #555; margin-bottom: 30px; letter-spacing: 2px; }
+        #expr-display { font-size: 34px; height: 45px; color: white; font-weight: bold; margin-bottom: 35px; }
+
+        #numbers-row { display: flex; gap: 20px; margin-bottom: 35px; }
+        .num-circle {
+            width: 75px; height: 75px; background: white; border-radius: 50%;
+            color: var(--bg-amber); font-size: 26px; font-weight: bold;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: 0.2s; box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        }
+        .num-circle:hover { transform: translateY(-3px); filter: brightness(1.1); }
+
+        .controls-grid { display: grid; grid-template-columns: repeat(4, 65px); gap: 10px; }
+        .op-btn {
+            height: 44px; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;
+            background: none; color: #ccc; font-size: 13px; font-weight: bold;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+        }
+        .op-btn:hover { background: rgba(255,255,255,0.06); border-color: var(--gold); color: white; }
+
+        #meditate-btn {
+            margin-top: 35px; width: 290px; height: 55px; border: none; border-radius: 28px;
+            background: var(--gold); color: var(--bg-amber); font-weight: bold;
+            font-size: 15px; letter-spacing: 3px; cursor: pointer; transition: 0.5s ease;
+        }
+
+        /* 祝祭の瞬間のみ、白き光が巡る */
+        #celebration-flash {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: #FFFFFF; opacity: 0; pointer-events: none;
+            transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1); z-index: 100;
+        }
+        
+        .footer-note { margin-top: 25px; font-size: 10px; color: #333; letter-spacing: 1px; }
+    </style>
+</head>
+<body>
+    <div id="sidebar">
+        <h1>Cat log puzzle</h1>
+        <div class="label">COURSES</div>
+        <div id="course-list"></div>
+        <div class="label">ARCHIVE</div>
+        <div id="archive-grid"></div>
+    </div>
+
+    <div id="canvas">
+        <div id="celebration-flash"></div>
+        <div id="target-icon-container">
+            <img src="assets/icon.png" id="target-icon" alt="Target Icon">
+        </div>
+        <div id="stage-info">PRACTICE | QUESTION 1</div>
+        <div id="expr-display"></div>
+        
+        <div id="numbers-row"></div>
+
+        <div class="controls-grid">
+            <button class="op-btn" onclick="add('+')">+</button>
+            <button class="op-btn" onclick="add('-')">-</button>
+            <button class="op-btn" onclick="add('*')">*</button>
+            <button class="op-btn" onclick="add('/')">/</button>
+            
+            <button class="op-btn" onclick="add('(')">(</button>
+            <button class="op-btn" onclick="add(')')">)</button>
+            <button class="op-btn" onclick="add('**')">xʸ</button>
+            <button class="op-btn" onclick="add('Math.sqrt(')">√</button>
+
+            <button class="op-btn" onclick="add('nPr(')">nPr</button>
+            <button class="op-btn" onclick="add('nCr(')">nCr</button>
+            <button class="op-btn" onclick="add('factorial(')">!</button>
+            <button class="op-btn" onclick="add(',')">,</button>
+
+            <button class="op-btn" onclick="add('Math.sin(')">sin</button>
+            <button class="op-btn" onclick="add('Math.cos(')">cos</button>
+            <button class="op-btn" onclick="add('Math.abs(')">abs</button>
+            <button class="op-btn" style="color: #cc6666;" onclick="reset()">RESET</button>
+        </div>
+
+        <button id="meditate-btn" onclick="check()">MEDITATE</button>
+        <div class="footer-note">© 2026 KIMONO CLUB</div>
+    </div>
+
+    <script>
+        const GITHUB_URL = "https://raw.githubusercontent.com/kimonoclub/cat-log-puzzle/refs/heads/main/puzzles.json";
+        let state = { puzzles: {}, cat: '', idx: 0, cleared: new Set(), currentExpr: '' };
+
+        const saved = localStorage.getItem('10quest_cleared');
+        if (saved) state.cleared = new Set(JSON.parse(saved));
+
+        async function init() {
+            try {
+                const resp = await fetch(GITHUB_URL);
+                const data = await resp.json();
+                state.puzzles = data.puzzles;
+                state.cat = Object.keys(state.puzzles).sort()[0];
+                render();
+            } catch (e) { console.error("Archive sync failed."); }
+        }
+
+        function render() {
+            const courseHtml = Object.keys(state.puzzles).sort().map(k => `
+                <button class="course-btn ${k === state.cat ? 'active' : ''}" onclick="changeCat('${k}')">
+                    ${k.split('_')[1].toUpperCase()}
+                </button>
+            `).join('');
+            document.getElementById('course-list').innerHTML = courseHtml;
+
+            const pList = state.puzzles[state.cat] || [];
+            const archiveHtml = pList.map((p, i) => `
+                <div class="tile ${i === state.idx ? 'active' : ''} ${state.cleared.has(p.id) ? 'cleared' : ''}" onclick="changeIdx(${i})">
+                    ${i + 1}
+                </div>
+            `).join('');
+            document.getElementById('archive-grid').innerHTML = archiveHtml;
+
+            if (pList.length > 0) {
+                const p = pList[state.idx];
+                document.getElementById('stage-info').innerText = `${state.cat.split('_')[1].toUpperCase()} | QUESTION ${state.idx + 1} (TARGET: ${p.target})`;
+                document.getElementById('expr-display').innerText = state.currentExpr.replace(/Math\./g, '').replace(/\*\*/g, '^');
+
+                const numsHtml = p.numbers.map(n => `
+                    <div class="num-circle" onclick="add('${n}')">${n}</div>
+                `).join('');
+                document.getElementById('numbers-row').innerHTML = numsHtml;
+            }
+        }
+
+        function add(val) { state.currentExpr += val; render(); }
+        function reset() { state.currentExpr = ''; render(); }
+        function changeCat(k) { state.cat = k; state.idx = 0; reset(); }
+        function changeIdx(i) { state.idx = i; reset(); }
+
+        function check() {
+            const p = state.puzzles[state.cat][state.idx];
+            try {
+                const MathContext = {
+                    ...Math,
+                    factorial: n => (n <= 1 ? 1 : n * MathContext.factorial(n - 1)),
+                    nPr: (n, r) => MathContext.factorial(n) / MathContext.factorial(n - r),
+                    nCr: (n, r) => MathContext.nPr(n, r) / MathContext.factorial(r)
+                };
+                const calcFunc = new Function('MathContext', `return ${state.currentExpr.replace(/Math\./g, 'MathContext.').replace(/abs\(/g, 'MathContext.abs(').replace(/factorial\(/g, 'MathContext.factorial(').replace(/nPr\(/g, 'MathContext.nPr(').replace(/nCr\(/g, 'MathContext.nCr(')}`);
+                const result = calcFunc(MathContext);
+
+                if (Math.abs(result - p.target) < 1e-7) {
+                    state.cleared.add(p.id);
+                    localStorage.setItem('10quest_cleared', JSON.stringify([...state.cleared]));
+                    celebrate();
+                } else {
+                    const display = document.getElementById('expr-display');
+                    display.innerText = "Error: " + Math.round(result * 100) / 100;
+                    display.style.color = "#cc6666";
+                    setTimeout(() => { display.style.color = "white"; reset(); }, 600);
+                }
+            } catch (e) { reset(); }
+        }
+
+        function celebrate() {
+            const flash = document.getElementById('celebration-flash');
+            const icon = document.getElementById('target-icon');
+            
+            flash.style.opacity = "0.35"; // 白き光
+            icon.style.transform = "scale(1.15)";
+            
+            setTimeout(() => {
+                flash.style.opacity = "0";
+                icon.style.transform = "scale(1)";
+                state.idx = (state.idx + 1) % state.puzzles[state.cat].length;
+                reset();
+            }, 800);
+        }
+
+        init();
+    </script>
+</body>
+</html>
