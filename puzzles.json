@@ -57,6 +57,14 @@
     ],
     "3_transcendental": [
       { "id": "T003", "numbers": ["φ", "φ", "9"], "target": 10, "solution": "(phi * phi - phi) + 9", "hint": "黄金数の定義 φ² = φ + 1 を使おう。" }
-    ]
+    ],
+"4_challenge": [
+  { 
+    "id": "C001", 
+    "numbers": ["π", "π", "π"], 
+    "target": 10, 
+    "description": "【今週の挑戦状】丸め処理(round, ceil)禁止。3つのπで10を刻め。" 
+  }
+]
   }
 }

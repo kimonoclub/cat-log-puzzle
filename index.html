@@ -61,12 +61,10 @@
             margin-bottom: 10px;
         }
         #target-icon {
-            max-height: 120px; width: auto; 
-            filter: none; 
-            transition: transform 0.8s;
+            max-height: 120px; width: auto; filter: none; transition: transform 0.8s;
         }
 
-        #stage-info { font-size: 11px; color: #555; margin-bottom: 30px; letter-spacing: 2px; }
+        #stage-info { font-size: 11px; color: #555; margin-bottom: 30px; letter-spacing: 2px; text-align: center; }
         #expr-display { font-size: 34px; height: 45px; color: white; font-weight: bold; margin-bottom: 35px; }
 
         #numbers-row { display: flex; gap: 20px; margin-bottom: 35px; }
@@ -91,6 +89,19 @@
             background: var(--gold); color: var(--bg-amber); font-weight: bold;
             font-size: 15px; letter-spacing: 3px; cursor: pointer; transition: 0.5s ease;
         }
+
+        /* 共有コンテナ */
+        #share-container {
+            display: none; margin-top: 25px; gap: 15px; animation: fadeIn 0.8s ease forwards;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .share-btn {
+            padding: 10px 20px; border-radius: 20px; font-size: 11px; font-weight: bold;
+            cursor: pointer; transition: 0.3s; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: white;
+        }
+        .share-btn:hover { background: rgba(255,255,255,0.1); border-color: var(--gold); }
+        .x-btn { color: #1DA1F2; border-color: rgba(29, 161, 242, 0.3); }
 
         #celebration-flash {
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
@@ -125,17 +136,14 @@
             <button class="op-btn" onclick="add('-')">-</button>
             <button class="op-btn" onclick="add('*')">*</button>
             <button class="op-btn" onclick="add('/')">/</button>
-            
             <button class="op-btn" onclick="add('(')">(</button>
             <button class="op-btn" onclick="add(')')">)</button>
             <button class="op-btn" onclick="add('**')">xʸ</button>
             <button class="op-btn" onclick="add('Math.sqrt(')">√</button>
-
             <button class="op-btn" onclick="add('nPr(')">nPr</button>
             <button class="op-btn" onclick="add('nCr(')">nCr</button>
             <button class="op-btn" onclick="add('factorial(')">!</button>
             <button class="op-btn" onclick="add(',')">,</button>
-
             <button class="op-btn" onclick="add('Math.sin(')">sin</button>
             <button class="op-btn" onclick="add('Math.cos(')">cos</button>
             <button class="op-btn" onclick="add('Math.abs(')">abs</button>
@@ -143,7 +151,14 @@
         </div>
 
         <button id="meditate-btn" onclick="check()">MEDITATE</button>
-        <div class="footer-note">© 2026 KIMONO CLUB</div>
+
+        <!-- 共有ボタン -->
+        <div id="share-container">
+            <button class="share-btn x-btn" onclick="shareX()">POST TO X</button>
+            <button class="share-btn" onclick="copyExpr()">COPY EXPR</button>
+        </div>
+
+        <div class="footer-note">© 2026 KIMONO CLUB with Gemini</div>
     </div>
 
     <script>
@@ -156,50 +171,43 @@
         async function init() {
             try {
                 const resp = await fetch(JSON_URL);
-                if (!resp.ok) throw new Error("JSON file not found");
+                if (!resp.ok) throw new Error("JSON not found");
                 const data = await resp.json();
                 state.puzzles = data.puzzles;
-                
                 const categories = Object.keys(state.puzzles).sort();
                 if (categories.length > 0) {
                     state.cat = categories[0];
                     render();
                 }
             } catch (e) {
-                console.error("Data Load Error:", e);
                 document.getElementById('stage-info').innerText = "Data Load Error. Check puzzles.json.";
             }
         }
 
         function render() {
             const categories = Object.keys(state.puzzles).sort();
-            const courseHtml = categories.map(k => `
+            document.getElementById('course-list').innerHTML = categories.map(k => `
                 <button class="course-btn ${k === state.cat ? 'active' : ''}" onclick="changeCat('${k}')">
                     ${k.split('_')[1].toUpperCase()}
                 </button>
             `).join('');
-            document.getElementById('course-list').innerHTML = courseHtml;
 
             const pList = state.puzzles[state.cat] || [];
-            const archiveHtml = pList.map((p, i) => `
+            document.getElementById('archive-grid').innerHTML = pList.map((p, i) => `
                 <div class="tile ${i === state.idx ? 'active' : ''} ${state.cleared.has(p.id) ? 'cleared' : ''}" onclick="changeIdx(${i})">
                     ${i + 1}
                 </div>
             `).join('');
-            document.getElementById('archive-grid').innerHTML = archiveHtml;
 
             if (pList.length > 0) {
                 const p = pList[state.idx];
-                document.getElementById('stage-info').innerText = `${state.cat.split('_')[1].toUpperCase()} | QUESTION ${state.idx + 1} (TARGET: ${p.target})`;
-                document.getElementById('expr-display').innerText = state.currentExpr
-                    .replace(/Math\./g, '')
-                    .replace(/\*\*/g, '^');
-
-                const numsHtml = p.numbers.map(n => `
+                document.getElementById('stage-info').innerHTML = `${state.cat.split('_')[1].toUpperCase()} | QUESTION ${state.idx + 1} (TARGET: ${p.target})<br><small style="color:#444">${p.description || ''}</small>`;
+                document.getElementById('expr-display').innerText = state.currentExpr.replace(/Math\./g, '').replace(/\*\*/g, '^');
+                document.getElementById('numbers-row').innerHTML = p.numbers.map(n => `
                     <div class="num-circle" onclick="add('${n}')">${n}</div>
                 `).join('');
-                document.getElementById('numbers-row').innerHTML = numsHtml;
             }
+            document.getElementById('share-container').style.display = "none"; // カテゴリ切り替え時にボタンを隠す
         }
 
         function add(val) { state.currentExpr += val; render(); }
@@ -248,14 +256,26 @@
         function celebrate() {
             const flash = document.getElementById('celebration-flash');
             const icon = document.getElementById('target-icon');
+            const share = document.getElementById('share-container');
             flash.style.opacity = "0.35";
             icon.style.transform = "scale(1.15)";
+            share.style.display = "flex";
             setTimeout(() => {
                 flash.style.opacity = "0";
                 icon.style.transform = "scale(1)";
-                state.idx = (state.idx + 1) % state.puzzles[state.cat].length;
-                reset();
             }, 800);
+        }
+
+        function shareX() {
+            const p = state.puzzles[state.cat][state.idx];
+            const expr = state.currentExpr.replace(/Math\./g, '').replace(/\*\*/g, '^');
+            const text = encodeURIComponent(`Cat log puzzle | ${state.cat.split('_')[1].toUpperCase()} Q${state.idx + 1} をクリア！\n解法：${expr}\n#CatLogPuzzle #10Quest`);
+            window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
+        }
+
+        function copyExpr() {
+            const expr = state.currentExpr.replace(/Math\./g, '').replace(/\*\*/g, '^');
+            navigator.clipboard.writeText(expr).then(() => alert("数式をコピーしました。"));
         }
 
         init();
