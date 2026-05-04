@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -21,7 +21,7 @@
             display: flex; height: 100vh; overflow: hidden;
         }
 
-        /* サイドバー：知のアーカイブ */
+        /* サイドバー */
         #sidebar {
             width: 260px; background: rgba(0, 0, 0, 0.4);
             border-right: 1px solid rgba(255, 255, 255, 0.05);
@@ -50,20 +50,18 @@
         .tile.active { background: var(--gold); color: var(--bg-amber); font-weight: bold; }
         .tile.cleared { background: rgba(250, 214, 165, 0.25); color: white; }
 
-        /* キャンバス：瞑想の場 */
+        /* キャンバス */
         #canvas {
             flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
-            padding: 20px 40px; position: relative; padding-top: 6vh; 
+            padding: 20px 40px; position: relative; padding-top: 5vh; 
         }
 
-        /* アイコン表示：装飾を廃した純粋な黒 */
         #target-icon-container {
             height: 140px; display: flex; align-items: center; justify-content: center;
             margin-bottom: 10px;
         }
         #target-icon {
             max-height: 120px; width: auto; 
-            /* 光（shadow）を完全に削除 */
             filter: none; 
             transition: transform 0.8s;
         }
@@ -94,7 +92,6 @@
             font-size: 15px; letter-spacing: 3px; cursor: pointer; transition: 0.5s ease;
         }
 
-        /* 祝祭の瞬間のみ、白き光が巡る */
         #celebration-flash {
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
             background: #FFFFFF; opacity: 0; pointer-events: none;
@@ -118,7 +115,7 @@
         <div id="target-icon-container">
             <img src="assets/icon.png" id="target-icon" alt="Target Icon">
         </div>
-        <div id="stage-info">PRACTICE | QUESTION 1</div>
+        <div id="stage-info">LOADING...</div>
         <div id="expr-display"></div>
         
         <div id="numbers-row"></div>
@@ -150,7 +147,7 @@
     </div>
 
     <script>
-        const GITHUB_URL = "https://raw.githubusercontent.com/kimonoclub/cat-log-puzzle/refs/heads/main/puzzles.json";
+        const JSON_URL = "puzzles.json"; 
         let state = { puzzles: {}, cat: '', idx: 0, cleared: new Set(), currentExpr: '' };
 
         const saved = localStorage.getItem('10quest_cleared');
@@ -158,16 +155,25 @@
 
         async function init() {
             try {
-                const resp = await fetch(GITHUB_URL);
+                const resp = await fetch(JSON_URL);
+                if (!resp.ok) throw new Error("JSON file not found");
                 const data = await resp.json();
                 state.puzzles = data.puzzles;
-                state.cat = Object.keys(state.puzzles).sort()[0];
-                render();
-            } catch (e) { console.error("Archive sync failed."); }
+                
+                const categories = Object.keys(state.puzzles).sort();
+                if (categories.length > 0) {
+                    state.cat = categories[0];
+                    render();
+                }
+            } catch (e) {
+                console.error("Data Load Error:", e);
+                document.getElementById('stage-info').innerText = "Data Load Error. Check puzzles.json.";
+            }
         }
 
         function render() {
-            const courseHtml = Object.keys(state.puzzles).sort().map(k => `
+            const categories = Object.keys(state.puzzles).sort();
+            const courseHtml = categories.map(k => `
                 <button class="course-btn ${k === state.cat ? 'active' : ''}" onclick="changeCat('${k}')">
                     ${k.split('_')[1].toUpperCase()}
                 </button>
@@ -185,7 +191,9 @@
             if (pList.length > 0) {
                 const p = pList[state.idx];
                 document.getElementById('stage-info').innerText = `${state.cat.split('_')[1].toUpperCase()} | QUESTION ${state.idx + 1} (TARGET: ${p.target})`;
-                document.getElementById('expr-display').innerText = state.currentExpr.replace(/Math\./g, '').replace(/\*\*/g, '^');
+                document.getElementById('expr-display').innerText = state.currentExpr
+                    .replace(/Math\./g, '')
+                    .replace(/\*\*/g, '^');
 
                 const numsHtml = p.numbers.map(n => `
                     <div class="num-circle" onclick="add('${n}')">${n}</div>
@@ -206,9 +214,22 @@
                     ...Math,
                     factorial: n => (n <= 1 ? 1 : n * MathContext.factorial(n - 1)),
                     nPr: (n, r) => MathContext.factorial(n) / MathContext.factorial(n - r),
-                    nCr: (n, r) => MathContext.nPr(n, r) / MathContext.factorial(r)
+                    nCr: (n, r) => MathContext.nPr(n, r) / MathContext.factorial(r),
+                    π: Math.PI, e: Math.E, φ: (1 + Math.sqrt(5)) / 2, τ: Math.PI * 2
                 };
-                const calcFunc = new Function('MathContext', `return ${state.currentExpr.replace(/Math\./g, 'MathContext.').replace(/abs\(/g, 'MathContext.abs(').replace(/factorial\(/g, 'MathContext.factorial(').replace(/nPr\(/g, 'MathContext.nPr(').replace(/nCr\(/g, 'MathContext.nCr(')}`);
+                
+                let safeExpr = state.currentExpr
+                    .replace(/Math\./g, 'MathContext.')
+                    .replace(/abs\(/g, 'MathContext.abs(')
+                    .replace(/factorial\(/g, 'MathContext.factorial(')
+                    .replace(/nPr\(/g, 'MathContext.nPr(')
+                    .replace(/nCr\(/g, 'MathContext.nCr(')
+                    .replace(/π/g, 'MathContext.π')
+                    .replace(/e/g, 'MathContext.e')
+                    .replace(/φ/g, 'MathContext.φ')
+                    .replace(/τ/g, 'MathContext.τ');
+
+                const calcFunc = new Function('MathContext', `return ${safeExpr}`);
                 const result = calcFunc(MathContext);
 
                 if (Math.abs(result - p.target) < 1e-7) {
@@ -227,10 +248,8 @@
         function celebrate() {
             const flash = document.getElementById('celebration-flash');
             const icon = document.getElementById('target-icon');
-            
-            flash.style.opacity = "0.35"; // 白き光
+            flash.style.opacity = "0.35";
             icon.style.transform = "scale(1.15)";
-            
             setTimeout(() => {
                 flash.style.opacity = "0";
                 icon.style.transform = "scale(1)";
